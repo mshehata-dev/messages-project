@@ -20,19 +20,21 @@ export class PostsService {
             .pipe(map(data => {
                 return {
                     posts: data.posts.map(post => {
+                        console.log(post);
                         return {
                             id: post._id,
                             title: post.title,
                             content: post.content,
-                            imagePath: post.imagePath
+                            imagePath: post.imagePath,
+                            creator: post.creator
                         };
                     }),
                     maxPosts: data.maxPosts
                 };
             }))
-            .subscribe(mappedPostsData => {
-                this.posts = mappedPostsData.posts;
-                this.postsUpdated.next({posts: [...this.posts], postsCount: mappedPostsData.maxPosts});
+            .subscribe(transformedPostData => {
+                this.posts = transformedPostData.posts;
+                this.postsUpdated.next({posts: [...this.posts], postsCount: transformedPostData.maxPosts});
             });
     }
 
@@ -41,7 +43,13 @@ export class PostsService {
     }
 
     getPost(id: string) {
-        return this.http.get<{_id: string, title: string, content: string, imagePath: string}>('http://localhost:3000/api/posts/' + id);
+        return this.http.get<{
+            _id: string,
+            title: string,
+            content: string,
+            imagePath: string,
+            creator: string
+        }>('http://localhost:3000/api/posts/' + id);
     }
 
     addPost(title: string, content: string, image: File) {
@@ -62,7 +70,7 @@ export class PostsService {
 
     updatePost(id: string, title: string, content: string, image: File | string) {
         // const post: Post = { id, title, content, imagePath: image };
-        let postData: Post | FormData;
+        let postData: any;
         if (typeof image === 'string') {
             postData = {id, title, content, imagePath: image};
         } else {

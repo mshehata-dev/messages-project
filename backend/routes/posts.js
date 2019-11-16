@@ -1,6 +1,7 @@
 const express = require('express');
 const Post = require('../models/post');
 const multer = require('multer');
+const checkAuth = require('../middleware/check-auth');
 
 const router = express.Router();
 
@@ -26,13 +27,16 @@ const storage = multer.diskStorage({
     }
 })
 
-router.post('', multer({storage: storage }).single('image'), (req, res) => {
+router.post('', checkAuth, multer({storage: storage }).single('image'), (req, res) => {
     const url = req.protocol + '://' + req.get('host');
     const post = new Post({
         title: req.body.title,
         content: req.body.content,
-        imagePath: url + '/images/' + req.file.filename
+        imagePath: url + '/images/' + req.file.filename,
+        creator: req.userData.userId
     });
+    // console.log(req);
+    // return res.status(200).json({});
     post.save().then(createdPost => {
         res.status(201).json({
             message: 'post created successfully!',
@@ -47,7 +51,7 @@ router.post('', multer({storage: storage }).single('image'), (req, res) => {
 });
 
 router.get('', (req, res) => {
-    console.log(req.query);
+    // console.log(req.query);
     const pageSize = +req.query.pagesize;
     const currentPage = +req.query.page;
     const postQuery = Post.find();
@@ -60,7 +64,7 @@ router.get('', (req, res) => {
     postQuery
         .then(docs => {
             fetchedPosts = docs;
-            return Post.count();            
+            return Post.countDocuments();            
         })
         .then(count => {
             res.status(200).json({
@@ -81,7 +85,7 @@ router.get('/:id', (req, res) => {
     })
 })
 
-router.put('/:id', multer({storage: storage }).single('image'), (req, res) => {
+router.put('/:id', checkAuth, multer({storage: storage }).single('image'), (req, res) => {
     let imagePath = req.body.imagePath;
     if(req.file) {
         const url = req.protocol + '://' + req.get('host');
@@ -91,17 +95,27 @@ router.put('/:id', multer({storage: storage }).single('image'), (req, res) => {
         _id: req.body.id,
         title: req.body.title,
         content: req.body.content,
-        imagePath: imagePath 
+        imagePath: imagePath,
+        creator: req.userData.userId
     });
-    Post.updateOne({_id: req.params.id}, post).then(() => {
+    Post.updateOne({_id: req.params.id, creator: req.userData.userId}, post).then(result => {
         // console.log(result);
-        res.status(200).json({message: 'Post updated!'})
+        if (result.nModified > 0) {
+            res.status(200).json({message: 'Post updated!'})
+        } else {
+            res.status(401).json({message: 'Not Authorized!'})
+        }
     })
 })
 
-router.delete('/:id', (req, res) => {
-    Post.deleteOne({_id: req.params.id}).then(() => {
-        res.status(200).json({message: 'Post deleted!'});
+router.delete('/:id', checkAuth, (req, res) => {
+    Post.deleteOne({_id: req.params.id, creator: req.userData.userId}).then(result => {
+        console.log(result)
+        if (result.n > 0) {
+            res.status(200).json({message: 'Post deleted!'})
+        } else {
+            res.status(401).json({message: 'Not Authorized!'})
+        }
     })
 })
 
