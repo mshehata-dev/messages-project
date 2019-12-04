@@ -48,6 +48,11 @@ router.post('', checkAuth, multer({storage: storage }).single('image'), (req, re
             } 
         })
     })
+    .catch(err => {
+        res.status(500).json({
+            message: 'Creating a post failed!'
+        })
+    })
 });
 
 router.get('', (req, res) => {
