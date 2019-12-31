@@ -9,7 +9,7 @@ import { AuthService } from '../auth/auth.service';
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   private authListenerSub: Subscription;
-  private authenticated = false;
+  authenticated = false;
   constructor(private authService: AuthService) {}
 
   ngOnInit() {
